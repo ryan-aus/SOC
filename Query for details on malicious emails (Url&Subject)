@@ -1,0 +1,9 @@
+//Provides more detail to malicious emails
+SecurityAlert
+| project todynamic(Entities), TimeGenerated, AlertName
+| mv-expand Entities
+| project AlertName, TimeGenerated, NetworkMessageId = trim(@'^\["|"]$', tostring(Entities.NetworkMessageIds))
+| join kind=inner (EmailUrlInfo) on NetworkMessageId
+| project TimeGenerated, AlertName, Url, NetworkMessageId
+| join kind=inner (EmailEvents) on NetworkMessageId
+| project TimeGenerated, AlertName, Url, NetworkMessageId, Subject, SenderFromAddress
