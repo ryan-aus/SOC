@@ -1,0 +1,32 @@
+let PasswordChangeEvents = () {
+    let PwordChange = AuditLogs
+        | where OperationName has "password" and OperationName != "Self-service password reset flow activity progress"
+        | where Result == "success"
+        | extend UserPrincipalName = tostring(InitiatedBy.user.userPrincipalName)
+        | extend PasswordChangeTime = TimeGenerated;
+    PwordChange
+};
+let SuccessfulLoginEvents = () {
+    let SucLogin = SigninLogs
+        | where ResultType == 0
+        | where IsInteractive == true
+        | extend Country = tostring(LocationDetails.countryOrRegion)
+        | where Country != "AU" and Country != ""
+        | extend LoginTime = TimeGenerated;
+    SucLogin
+};
+PasswordChangeEvents
+    | join kind=inner (
+        SuccessfulLoginEvents
+) on UserPrincipalName
+| project UserPrincipalName, PasswordChangeTime, LoginTime, IPAddress, Country
+| where LoginTime between (PasswordChangeTime..datetime_add('hour',24,PasswordChangeTime))
+| join kind=leftanti (
+    PasswordChangeEvents
+    | join kind=inner (
+        SuccessfulLoginEvents
+    ) on UserPrincipalName
+    | project UserPrincipalName, PasswordChangeTime, LoginTime, IPAddress
+    | where LoginTime between (datetime_add('day',-7,PasswordChangeTime)..PasswordChangeTime)
+) on IPAddress
+| where PasswordChangeTime > ago(28d)
