@@ -6,4 +6,4 @@ SecurityAlert
 | join kind=inner (EmailUrlInfo) on NetworkMessageId
 | project TimeGenerated, AlertName, Url, NetworkMessageId
 | join kind=inner (EmailEvents) on NetworkMessageId
-| project TimeGenerated, AlertName, Url, NetworkMessageId, Subject, SenderFromAddress
+| project TimeGenerated, NetworkMessageId,Subject, Url, SenderFromAddress, SenderFromDomain, SenderIPv4, RecipientEmailAddress, AlertName
