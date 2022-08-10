@@ -1,3 +1,5 @@
+// Goal of this script is to search for suspicious logins based on password change events
+// followed by a login from an unexpected location shortly after.
 let PasswordChangeEvents = () {
     let PwordChange = AuditLogs
         | where OperationName has "password" and OperationName != "Self-service password reset flow activity progress"
