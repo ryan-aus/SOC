@@ -10,12 +10,16 @@ SecurityAlert
 
 //Provides more detail to malicious emails
 SecurityAlert
+| where AlertName contains "phish" and Entities != ''
 | project Entities, TimeGenerated, AlertName
-| project AlertName, TimeGenerated, NetworkMessageId = tostring(parse_json(Entities)[1].NetworkMessageId), P2Sender = parse_json(Entities)[1].P2Sender,P2SenderName = parse_json(Entities)[1].P2SenderDisplayName, P1Sender = parse_json(Entities)[1].P1Sender
+| mv-expand todynamic(Entities)
+| where Entities has "NetworkMessageId"
+| project AlertName, TimeGenerated, NetworkMessageId = tostring(Entities.NetworkMessageId), P2Sender = Entities.P2Sender,P2SenderName = Entities.P2SenderDisplayName, P1Sender = Entities.P1Sender
 | join kind=inner (EmailUrlInfo) on NetworkMessageId
 | project TimeGenerated, AlertName, Url, NetworkMessageId, P2Sender, P2SenderName, P1Sender
 | join kind=inner (EmailEvents) on NetworkMessageId
 //| where NetworkMessageId == ''
 | project TimeGenerated, DeliveryAction, DeliveryLocation, Subject, Url, SenderFromAddress,P2Sender, P2SenderName, P1Sender, SenderFromDomain, SenderIPv4, RecipientEmailAddress, AlertName,  NetworkMessageId
+
 
 
