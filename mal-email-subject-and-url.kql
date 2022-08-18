@@ -10,17 +10,17 @@ SecurityAlert
 
 //Provides more detail to malicious emails
 SecurityAlert
-| where TimeGenerated > ago(2d)
-| where AlertName contains "phish" and Entities != ''
+| where TimeGenerated > ago(12h)
+| where AlertName has "phish" and Entities != ''
 | project Entities, TimeGenerated, AlertName
 | mv-expand todynamic(Entities)
 | where Entities has "NetworkMessageId"
 | project AlertName, TimeGenerated, NetworkMessageId = tostring(Entities.NetworkMessageId), P2Sender = Entities.P2Sender,P2SenderName = Entities.P2SenderDisplayName, P1Sender = Entities.P1Sender
-| join kind=inner (EmailUrlInfo) on NetworkMessageId
-| project TimeGenerated, AlertName, Url, NetworkMessageId, P2Sender, P2SenderName, P1Sender
-| join kind=inner (EmailEvents) on NetworkMessageId
 //| where NetworkMessageId == ''
-| project TimeGenerated, DeliveryAction, DeliveryLocation, Subject,Url, SenderFromAddress,P2Sender, P2SenderName, P1Sender, SenderFromDomain, SenderIPv4, RecipientEmailAddress, AlertName,  NetworkMessageId
+| join kind=inner (EmailEvents) on NetworkMessageId
+| project TimeGenerated, DeliveryAction, DeliveryLocation, Subject, SenderFromAddress,P2Sender, P2SenderName, P1Sender, SenderFromDomain, SenderIPv4, RecipientEmailAddress, AlertName,  NetworkMessageId
+| join kind=leftouter (EmailUrlInfo) on NetworkMessageId
+| project TimeGenerated, DeliveryAction, DeliveryLocation, Subject, Url, SenderFromAddress,P2Sender, P2SenderName, P1Sender, SenderFromDomain, SenderIPv4, RecipientEmailAddress, AlertName,  NetworkMessageId
 
 
 
