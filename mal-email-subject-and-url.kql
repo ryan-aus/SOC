@@ -8,36 +8,20 @@ SecurityAlert
 | join kind=inner (EmailEvents) on NetworkMessageId
 | project TimeGenerated, NetworkMessageId,Subject, Url, SenderFromAddress, SenderFromDomain, SenderIPv4, RecipientEmailAddress, AlertName
 
-//Provides more detail to malicious emails
+//Provides P1,P2 and Url info
 SecurityAlert
-| where TimeGenerated > ago(12h)
+| where TimeGenerated > ago(7d)
 | where AlertName has "phish" and Entities != ''
-| project Entities, TimeGenerated, AlertName
-| mv-expand todynamic(Entities)
-| where Entities has "NetworkMessageId"
-| project AlertName, TimeGenerated, NetworkMessageId = tostring(Entities.NetworkMessageId), P2Sender = Entities.P2Sender,P2SenderName = Entities.P2SenderDisplayName, P1Sender = Entities.P1Sender
-//| where NetworkMessageId == ''
-| join kind=inner (EmailEvents) on NetworkMessageId
-| project TimeGenerated, DeliveryAction, DeliveryLocation, Subject, SenderFromAddress,P2Sender, P2SenderName, P1Sender, SenderFromDomain, SenderIPv4, RecipientEmailAddress, AlertName,  NetworkMessageId
-| join kind=leftouter (EmailUrlInfo) on NetworkMessageId
-| project TimeGenerated, DeliveryAction, DeliveryLocation, Subject, Url, SenderFromAddress,P2Sender, P2SenderName, P1Sender, SenderFromDomain, SenderIPv4, RecipientEmailAddress, AlertName,  NetworkMessageId
-
-//Work in progress
-SecurityAlert
-| where TimeGenerated > ago(12h)
-| where AlertName has "phish" and Entities != ''
-| project Entities, TimeGenerated, AlertName
-| mv-expand todynamic(Entities)
-| mv-apply todynamic(Entities) on
-    (   summarize make_set(Entities.NetworkMessageIds)
-        | mv-expand set_Entities_NetworkMessageIds 
+| project todynamic(Entities), TimeGenerated, AlertName
+| mv-apply Entities on
+    (
+         summarize make_set(Entities.NetworkMessageIds)
+        | mv-expand set_Entities_NetworkMessageIds
     )
-//| where Entities has "NetworkMessageId"
-| project AlertName, TimeGenerated, NetworkMessageId = tostring(set_Entities_NetworkMessageIds), P2Sender = Entities.P2Sender,P2SenderName = Entities.P2SenderDisplayName, P1Sender = Entities.P1Sender
-//| where NetworkMessageId == 'b28527bb-e0a4-4a1f-dc25-08da74eb0078'
+| project TimeGenerated, AlertName, NetworkMessageId = tostring(set_Entities_NetworkMessageIds)
 | join kind=inner (EmailEvents) on NetworkMessageId
-| project TimeGenerated, DeliveryAction, DeliveryLocation, Subject, SenderFromAddress,P2Sender, P2SenderName, P1Sender, SenderFromDomain, SenderIPv4, RecipientEmailAddress, AlertName,  NetworkMessageId
+| project TimeGenerated, DeliveryAction, DeliveryLocation, Subject, SenderDisplayName, SenderFromAddress,SenderMailFromAddress, SenderFromDomain, SenderIPv4, RecipientEmailAddress, AlertName,  NetworkMessageId
 | join kind=leftouter (EmailUrlInfo) on NetworkMessageId
-| project TimeGenerated, DeliveryAction, DeliveryLocation, RecipientEmailAddress, Subject, Url, SenderFromAddress,P2Sender, P2SenderName, P1Sender, SenderFromDomain, SenderIPv4, AlertName,  NetworkMessageId
-| where SenderFromDomain == "gtswimming.com.au"
+//| where NetworkMessageId == ''
+| project   TimeGenerated, DeliveryAction, DeliveryLocation, RecipientEmailAddress, Subject, Url,SenderDisplayName,P2Sender = SenderFromAddress,P1Sender = SenderMailFromAddress, SenderFromDomain, SenderIPv4, AlertName, NetworkMessageId
 
